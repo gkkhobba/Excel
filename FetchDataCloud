@@ -1,0 +1,63 @@
+Sub FetchDataFromDrive()
+ 
+    'Define variables
+    Dim cell As Range
+    Dim cellValue As Variant
+    Dim lastRow As Long
+    Dim objHTTP As Object
+    Dim url As String
+    Dim ws As Worksheet
+ 
+    'Set the URL to fetch data from OneDrive
+    url = "https://onedrive.live.com/download?cid={YOUR_CID}&resid={YOUR_RESID}&authkey={YOUR_AUTHKEY}"
+ 
+    'Create an instance of the ServerXMLHTTP object
+    Set objHTTP = CreateObject("MSXML2.ServerXMLHTTP")
+ 
+    'Open the URL and send the request
+    objHTTP.Open "GET", url, False
+    objHTTP.send
+ 
+    'Check the response status code
+    If objHTTP.Status = 200 Then
+ 
+        'Get the response text as binary
+        Dim binData As Byte()
+        binData = objHTTP.ResponseBody
+ 
+        'Save the binary data to a temporary file
+        Dim filePath As String
+        filePath = Environ("TEMP") & "\tempFile.xlsx"
+        Open filePath For Binary Access Write As #1
+        Put #1, 1, binData
+        Close #1
+ 
+        'Open the temporary file as a workbook
+        Dim tempWorkbook As Workbook
+        Set tempWorkbook = Workbooks.Open(filePath)
+ 
+        'Get the last row of data in the workbook
+        lastRow = tempWorkbook.Sheets(1).Cells(tempWorkbook.Sheets(1).Rows.Count, "A").End(xlUp).Row
+ 
+        'Set the target worksheet
+        Set ws = ThisWorkbook.Sheets("Sheet1")
+ 
+        'Loop through each cell in the range and fetch the value
+        For Each cell In tempWorkbook.Sheets(1).Range("A1:A" & lastRow)
+            cellValue = cell.Value
+            'Write the cell value to the target worksheet
+            ws.Cells(ws.Rows.Count, "A").End(xlUp).Offset(1, 0).Value = cellValue
+        Next cell
+ 
+        'Close the temporary workbook
+        tempWorkbook.Close SaveChanges:=False
+ 
+        'Delete the temporary file
+        Kill filePath
+ 
+    Else
+        'If the request failed, display an error message
+        MsgBox "Failed to fetch data from OneDrive."
+    End If
+ 
+End Sub
