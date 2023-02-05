@@ -1,0 +1,34 @@
+Sub TransferDataToGoogleSheet()
+ 
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1") 'specify the name of the sheet in your workbook
+ 
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row 'get the last row with data in column A
+ 
+    'establish connection to Google Worksheet API
+    Dim objHTTP As Object
+    Set objHTTP = CreateObject("MSXML2.ServerXMLHTTP")
+ 
+    'specify the URL of your Google Worksheet
+    Dim url As String
+    url = "https://docs.google.com/spreadsheets/d/{YOUR_SHEET_ID}/update?key={YOUR_API_KEY}"
+ 
+    'create a query string with the data
+    Dim query As String
+    query = "sheet=Sheet1&range=A1:C" & lastRow & "&values=" & _
+            Replace(ws.Range("A1:C" & lastRow).Value, " ", "%20")
+ 
+    'open a connection to the API and send the data
+    objHTTP.Open "POST", url, False
+    objHTTP.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+    objHTTP.Send (query)
+ 
+    'check if the request was successful
+    If objHTTP.Status = 200 Then
+        MsgBox "Data transferred successfully to Google Worksheet."
+    Else
+        MsgBox "Failed to transfer data to Google Worksheet."
+    End If
+ 
+End Sub
